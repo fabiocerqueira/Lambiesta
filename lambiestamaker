@@ -1,8 +1,58 @@
-#!/usr/bin/env bash
-if [ -z $3 ]; then
-    echo "Use: $0 audio_in.mp3 start_time video_out.flv"
-else
-    ffmpeg -ss $2 -t 23 -acodec copy -i $1 outputfile.mp3
-    mencoder -ovc copy -audiofile outputfile.mp3 -oac copy video_nosound.flv -o $3
-    rm outputfile.mp3
-fi
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+
+import os
+from optparse import OptionParser
+
+
+def main():
+    usage = "uso: %prog -[m|f] [audio|video] start_time video_out.flv"
+    parser = OptionParser(usage=usage)
+    parser.add_option("-f", "--flv",help="video flv de entrada", metavar="FILE")
+    parser.add_option("-m", "--mp3",help="audio mp3 de entrada", metavar="FILE")
+
+    (options, args) = parser.parse_args()
+
+    if len(args) != 2:
+        parser.error('Número de parâmetros inválidos')
+    if not options.mp3 and not options.flv:
+        parser.error("Deve ser usada pelo menos uma opção: -mp3 ou -flv")
+    if options.mp3 and options.flv:
+        parser.error("Opções -mp3 e -flv não devem ser usadas juntas")
+    file_in = options.mp3 if options.mp3 else options.flv
+    type_in = 'mp3' if options.mp3 else 'flv'
+    if not os.path.exists(file_in):
+        parser.error('%s - arquivo não encontrado' % file_in)
+
+    try:
+        start_time = int(args[0])
+    except ValueError:
+        parser.error('o segundo parâmetro deve ser o tempo em segundos(int)')
+    video_out = args[1]
+    return file_in, type_in, start_time, video_out,
+
+
+def make_lambiesta(file_in, type_in, start_time, video_out):
+    print file_in, type_in, start_time, video_out
+    #definindo a mp3 de entrada
+    if type_in == 'mp3':
+        mp3_in = file_in
+    elif type_in == 'flv':
+        os.system('ffmpeg -i %s -ar 44100 -ab 160k -ac 2 output.mp3' % file_in)     #convertendo flv -> mp3
+        mp3_in = 'output.mp3'
+
+    #fazendo corte no audio
+    os.system('ffmpeg -ss %d -t 23 -acodec copy -i %s outputfile.mp3' % (start_time,mp3_in)) 
+    #juntando audio com vídeo padrão
+    os.system('mencoder -ovc copy -audiofile outputfile.mp3 -oac copy video_nosound.flv -o %s' % video_out)
+    os.system('rm outputfile.mp3')
+    if mp3_in == 'flv':
+        os.system('rm output.mp3')
+
+
+if __name__ == '__main__':
+    data_in =  main()
+    make_lambiesta(*data_in)
+    
+
+
