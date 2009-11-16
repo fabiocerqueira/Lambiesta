@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+if [ -z $3 ]; then
+    echo "Use: $0 audio_in.mp3 start_time video_out.flv"
+else
+    ffmpeg -ss $2 -t 23 -acodec copy -i $1 outputfile.mp3
+    mencoder -ovc copy -audiofile outputfile.mp3 -oac copy video_nosound.flv -o $3
+    rm outputfile.mp3
+fi

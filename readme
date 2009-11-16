@@ -1,0 +1,28 @@
+NAME
+    lambiestamaker - Lambiesta Maker
+
+SYNOPSIS
+    lambiestamaker audio_in.mp3 start_time video_out.flv
+
+DESCRIPTION
+    Altere o audio do vídeo mais comentado do momento com apenas o arquivo mp3 e o tempo inicial do corte.
+    
+    Argumentos obrigatório:
+        audio_in.mp3 
+            arquivo mp3 com o novo som desejado
+        
+        start_time
+            tempo em segundos de onde o audio deve começar
+    
+        video_out.flv
+            nome do arquivo de saída para o vídeo já remixado
+EXAMPLE
+    lambiestamaker chorando_se_foi.mp3 50 video_chorando_se_foi.flv
+
+AUTHOR
+    Fábio Cerqueira (steelday at gmail dot com) 
+
+REPORTING BUGS
+    Não vou corrigir...
+       
+
