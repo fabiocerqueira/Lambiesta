@@ -2,52 +2,96 @@
 #-*- coding: utf-8 -*-
 
 import os
+import re
+import urllib2
 from optparse import OptionParser
 
 
 def main():
-    usage = "uso: %prog -[m|f] [audio|video] start_time video_out.flv"
+    usage = "uso: %prog -[m|f|y] [audio|video|link] start_time video_out.flv\n%prog --help ,para ver as opcoes"
     parser = OptionParser(usage=usage)
     parser.add_option("-f", "--flv",help="video flv de entrada", metavar="FILE")
     parser.add_option("-m", "--mp3",help="audio mp3 de entrada", metavar="FILE")
+    parser.add_option("-y", "--youtube",help="youtube link de entrada", metavar="LINK")
 
     (options, args) = parser.parse_args()
 
     if len(args) != 2:
         parser.error('Número de parâmetros inválidos')
-    if not options.mp3 and not options.flv:
-        parser.error("Deve ser usada pelo menos uma opção: -mp3 ou -flv")
-    if options.mp3 and options.flv:
-        parser.error("Opções -mp3 e -flv não devem ser usadas juntas")
-    file_in = options.mp3 if options.mp3 else options.flv
-    type_in = 'mp3' if options.mp3 else 'flv'
-    if not os.path.exists(file_in):
-        parser.error('%s - arquivo não encontrado' % file_in)
+
+    inputs_type = filter(None,options.__dict__.values())
+    if len(inputs_type) > 1:
+        parser.error("Opções --mp3,--flv,--youtube não devem ser usadas juntas")
+
+    if len(inputs_type) == 0:
+        parser.error("Deve ser usada pelo menos uma opção: --mp3 ou --flv ou --youtube")
 
     try:
         start_time = int(args[0])
     except ValueError:
         parser.error('o segundo parâmetro deve ser o tempo em segundos(int)')
+
+    type_in = filter(lambda k: k if options.__dict__.get(k) else None, options.__dict__.keys())[0]
+    source = inputs_type[0]
+    if type_in == 'youtube':
+        try:
+            source = re.findall(r'v=(\w+)',source)[0]
+        except IndexError:
+            parser.error('%s - não é uma url válida do youtube' % source)
+    else:
+        if not os.path.exists(source):
+            parser.error('%s - arquivo não encontrado' % source)
+
     video_out = args[1]
-    return file_in, type_in, start_time, video_out,
+    return source, type_in, start_time, video_out
 
 
-def make_lambiesta(file_in, type_in, start_time, video_out):
-    print file_in, type_in, start_time, video_out
+def get_youtube(id_video, file_name):
+    print 'Pegando o link do video.'
+    page = urllib2.urlopen('http://www.youtube.com/watch?v=' + id_video)
+    texto = page.readlines()
+    for l in texto:
+        if 'SWF_ARGS' in l:
+            swfArgs = l.split('"')
+            break
+
+    video_id = swfArgs[swfArgs.index('video_id') + 2]
+    t =  swfArgs[swfArgs.index('t') + 2]
+
+    print "Fazendo download..."
+
+    file_down = urllib2.urlopen('http://www.youtube.com/get_video?video_id=%s&t=%s' % (video_id,t)).readlines()
+
+    file_save = open(file_name,'wb')
+    file_save.writelines(file_down)
+    file_save.close()
+
+    print "Download concluído."
+
+
+
+def make_lambiesta(source, type_in, start_time, video_out):
     #definindo a mp3 de entrada
     if type_in == 'mp3':
-        mp3_in = file_in
+        sound_in = source
     elif type_in == 'flv':
-        os.system('ffmpeg -i %s -ar 44100 -ab 160k -ac 2 output.mp3' % file_in)     #convertendo flv -> mp3
-        mp3_in = 'output.mp3'
+        os.system('ffmpeg -i %s -ar 44100 -ab 160k -ac 2 output.mp3' % source)     #convertendo flv -> mp3
+        sound_in = 'output.mp3'
+    elif type_in == 'youtube':
+        file_name = 'video_down.flv'
+        get_youtube(source, file_name)
+        os.system('ffmpeg -i %s -ar 44100 -ab 160k -ac 2 output.mp3' % file_name)     #convertendo flv -> mp3
+        sound_in = 'output.mp3'
 
     #fazendo corte no audio
-    os.system('ffmpeg -ss %d -t 23 -acodec copy -i %s outputfile.mp3' % (start_time,mp3_in)) 
+    os.system('ffmpeg -ss %d -t 23 -acodec copy -i %s outputfile.mp3' % (start_time,sound_in)) 
     #juntando audio com vídeo padrão
     os.system('mencoder -ovc copy -audiofile outputfile.mp3 -oac copy video_nosound.flv -o %s' % video_out)
     os.system('rm outputfile.mp3')
-    if mp3_in == 'flv':
+    if type_in in ['flv','youtube']:
         os.system('rm output.mp3')
+    if type_in == 'youtube':
+        os.system('rm video_down.flv')
 
 
 if __name__ == '__main__':
