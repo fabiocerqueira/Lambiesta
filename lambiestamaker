@@ -126,7 +126,7 @@ def make_lambiesta(source, type_in, start_time, video_out):
     )
     os.system('rm %s' % crop_sound)
     if type_in in ['flv', 'youtube']:
-        os.system('rm output.mp3')
+        os.system('rm %s' % extract_sound)
     if type_in == 'youtube':
         os.system('rm %s' % flv_video)
 
