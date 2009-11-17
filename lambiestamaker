@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 
 def main():
-    usage = "uso: %prog -[m|f|y] [audio|video|link] start_time video_out.flv\n%prog --help ,para ver as opcoes"
+    usage = "%prog -[m|f|y] [audio|video|link] start_time video_out.flv\n%prog --help ,para ver as opcoes"
     parser = OptionParser(usage=usage)
     parser.add_option("-f", "--flv",help="video flv de entrada", metavar="FILE")
     parser.add_option("-m", "--mp3",help="audio mp3 de entrada", metavar="FILE")
